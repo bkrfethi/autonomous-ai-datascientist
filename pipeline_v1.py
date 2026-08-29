@@ -19,8 +19,8 @@ def run_pipeline(csv_path: str, target_col: str):
 
     # 2. Séparation automatique des types de colonnes
     num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
-    cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()
-
+# Remplacement de la ligne 22 :
+    cat_cols = X.select_dtypes(include=['object', 'category', 'string']).columns.tolist()   
     # 3. Transformation des features (scaling des données numériques + one-hot encoding du texte)
     preprocessor = ColumnTransformer(
         transformers=[
