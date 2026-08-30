@@ -89,7 +89,7 @@ def run_agent(user_query: str, csv_path: str) -> str:
         
         try:
             response = client.chat.completions.create(
-                model="llama3-70b-8192",  # Modèle Groq (le plus performant)
+                model="openai/gpt-oss-120b" , # OUI, il est réactivé !,  # Modèle Groq (le plus performant)
                 messages=messages,
                 tools=tools,
                 tool_choice="auto",

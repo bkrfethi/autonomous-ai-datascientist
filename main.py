@@ -4,7 +4,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from tools.data_profiler import profile_dataset
 from tools.ml_trainer import train_and_evaluate
-
+from agent import run_agent
 app = FastAPI(title="Autonomous AI Data Scientist API")
 
 # Configuration CORS pour autoriser le futur frontend
@@ -50,5 +50,16 @@ def train_model(file_path: str, target_col: str):
     try:
         results = train_and_evaluate(file_path, target_col)
         return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ask")
+def ask_agent(file_path: str, query: str):
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Fichier non trouvé.")
+    try:
+        report = run_agent(query, file_path)
+        return {"query": query, "report": report}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
