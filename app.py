@@ -45,7 +45,7 @@ if uploaded_file:
         value="Quels clients risquent de partir et quels sont les facteurs principaux de ce churn ?"
     )
 
-    if st.button("🚀 Lancer l'analyse autonome", type="primary"):
+    if st.button(" Lancer l'analyse autonome", type="primary"):
         with st.spinner("L'agent AI analyse les données, entraîne les modèles et rédige le rapport..."):
             response = requests.post(
                 f"{API_URL}/ask",
