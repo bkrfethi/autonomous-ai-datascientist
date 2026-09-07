@@ -56,6 +56,16 @@ if uploaded_file:
                 data = response.json()
                 st.markdown("### 📋 Rapport généré par l'AI Agent")
                 st.markdown(data["report"])
+                
+                # Affichage dynamique des graphiques si générés
+                if os.path.exists("charts/feature_importance.png") and os.path.exists("charts/model_performance.png"):
+                    st.divider()
+                    st.markdown("### 📊 Visualisations du Modèle")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.image("charts/feature_importance.png", caption="Importance des Variables", use_container_width=True)
+                    with col2:
+                        st.image("charts/model_performance.png", caption="Performance du Modèle", use_container_width=True)
             else:
                 st.error(f"Erreur API ({response.status_code}) : {response.text}")
 else:

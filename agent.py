@@ -52,7 +52,22 @@ tools = [
                 "required": ["csv_path", "target_col"]
             }
         }
+    },
+    {
+    "type": "function",
+    "function": {
+        "name": "generate_charts",
+        "description": "Génère des visuels analytiques (importance des variables et performances) sous forme d'images PNG.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "csv_path": {"type": "string", "description": "Chemin du fichier CSV."},
+                "target_col": {"type": "string", "description": "Nom de la colonne cible."}
+            },
+            "required": ["csv_path", "target_col"]
+        }
     }
+}
 ]
 
 def run_agent(user_query: str, csv_path: str) -> str:
@@ -66,7 +81,7 @@ def run_agent(user_query: str, csv_path: str) -> str:
                 "Ton rôle est de répondre à la question de l'utilisateur en exécutant les outils nécessaires. "
                 "1. Commence toujours par profiler le jeu de données pour identifier la structure et la colonne cible. "
                 "2. Entraîne ensuite les modèles sur la colonne cible. "
-                "3. Rédige enfin un rapport clair, professionnel et structuré avec des recommandations métiers synthétiques."
+                "3. Entraîne ensuite les modèles et génère les graphiques d'analyse avec generate_charts. "
                 "Utilise un ton professionnel mais accessible. Structure ta réponse en 3 parties : "
                 "- Résumé exécutif (1 paragraphe)"
                 "- Analyse des résultats (métriques, feature importance)"
@@ -119,6 +134,8 @@ def run_agent(user_query: str, csv_path: str) -> str:
                     result = profile_dataset(args["csv_path"])
                 elif func_name == "train_and_evaluate":
                     result = train_and_evaluate(args["csv_path"], args["target_col"])
+                elif func_name == "generate_charts":
+                    result = generate_charts(args["csv_path"], args["target_col"])
                 else:
                     result = {"error": f"Outil inconnu : {func_name}"}
             except Exception as e:
