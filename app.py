@@ -54,19 +54,26 @@ if uploaded_file:
 
             if response.status_code == 200:
                 data = response.json()
-                st.markdown("### 📋 Rapport généré par l'AI Agent")
+                
+                # Rapport Markdown
+                st.markdown("### 📋 Rapport d'Analyse Autonome")
                 st.markdown(data["report"])
                 
-                # Affichage dynamique des graphiques si générés
-                if os.path.exists("charts/feature_importance.png") and os.path.exists("charts/model_performance.png"):
+                # Affichage du tableau d'expérimentations
+                if data.get("experiments"):
                     st.divider()
-                    st.markdown("### 📊 Visualisations du Modèle")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.image("charts/feature_importance.png", caption="Importance des Variables", use_container_width=True)
-                    with col2:
-                        st.image("charts/model_performance.png", caption="Performance du Modèle", use_container_width=True)
-            else:
-                st.error(f"Erreur API ({response.status_code}) : {response.text}")
+                    st.markdown("### 🔬 Historique des Expérimentations Autonomes")
+                    exp_df = []
+                    for exp in data["experiments"]:
+                        row = {"Exp ID": exp["experiment_id"], "Modèle": exp["config"]["model_name"].upper()}
+                        row.update(exp["metrics"])
+                        exp_df.append(row)
+                    st.dataframe(pd.DataFrame(exp_df), use_container_width=True)
+
+                # Affichage du graphique SHAP
+                if os.path.exists("charts/shap_summary.png"):
+                    st.divider()
+                    st.markdown("### 🔍 Explicabilité SHAP du Modèle")
+                    st.image("charts/shap_summary.png", caption="Analyse SHAP des contributions de variables", use_container_width=True)
 else:
     st.info("Veuillez charger un fichier CSV dans le panneau latéral pour commencer.")

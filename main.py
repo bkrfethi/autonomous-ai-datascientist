@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from tools.data_profiler import profile_dataset
 from tools.ml_trainer import train_and_evaluate
 from agent import run_agent
+from agent import run_autonomous_agent
 app = FastAPI(title="Autonomous AI Data Scientist API")
 
 # Configuration CORS pour autoriser le futur frontend
@@ -55,11 +56,19 @@ def train_model(file_path: str, target_col: str):
 
 
 @app.post("/ask")
-def ask_agent(file_path: str, query: str):
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Fichier non trouvé.")
+def ask_agent(file_path: str, query: str, target_col: str = "churn"):
     try:
-        report = run_agent(query, file_path)
-        return {"query": query, "report": report}
+        report = run_autonomous_agent(csv_path=file_path, target_col=target_col, query=query)
+        
+        # Charger l'historique de la mémoire
+        experiments = []
+        if os.path.exists("experiment_memory.json"):
+            with open("experiment_memory.json", "r", encoding="utf-8") as f:
+                experiments = json.load(f)
+
+        return {
+            "report": report,
+            "experiments": experiments
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
