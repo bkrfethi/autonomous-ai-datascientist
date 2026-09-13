@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from tools.eda_engine import analyze_dataset
 from tools.experiment_engine import run_experiment
 from tools.agent_memory import AgentMemory
-
+from tools.explainability import generate_shap_analysis
 # Charge les variables d'environnement
 load_dotenv()
 
@@ -49,6 +49,21 @@ TOOLS_SCHEMA = [
                 "required": ["csv_path", "target_col", "model_name"]
             }
         }
+    },
+    {
+    "type": "function",
+    "function": {
+        "name": "generate_shap_analysis",
+        "description": "Génère un graphique SHAP d'explicabilité de modèle sous forme d'image PNG.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "csv_path": {"type": "string"},
+                "target_col": {"type": "string"}
+            },
+            "required": ["csv_path", "target_col"]
+        }
+    }
     }
 ]
 
