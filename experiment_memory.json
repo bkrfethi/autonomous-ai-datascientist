@@ -1,0 +1,77 @@
+[
+  {
+    "experiment_id": 1,
+    "config": {
+      "model_name": "catboost",
+      "task_type": "Classification",
+      "handle_imbalance": true,
+      "log_transform_target": false
+    },
+    "metrics": {
+      "accuracy": 0.83,
+      "precision": 0.8475,
+      "recall": 0.83,
+      "f1_score": 0.8356,
+      "roc_auc": 0.9021
+    },
+    "top_features": {
+      "login_frequency": 33.579720350664836,
+      "support_tickets": 25.048545860427843,
+      "monthly_spending": 17.030562197008734,
+      "age": 13.665163783220942,
+      "subscription_Standard": 4.171916361859622,
+      "subscription_Premium": 3.490423688093654,
+      "subscription_Basic": 3.0136677587243783
+    }
+  },
+  {
+    "experiment_id": 2,
+    "config": {
+      "model_name": "lightgbm",
+      "task_type": "Classification",
+      "handle_imbalance": true,
+      "log_transform_target": false
+    },
+    "metrics": {
+      "accuracy": 0.83,
+      "precision": 0.8378,
+      "recall": 0.83,
+      "f1_score": 0.8331,
+      "roc_auc": 0.9013
+    },
+    "top_features": {
+      "monthly_spending": 959.0,
+      "age": 776.0,
+      "login_frequency": 649.0,
+      "support_tickets": 386.0,
+      "subscription_Standard": 69.0,
+      "subscription_Basic": 56.0,
+      "subscription_Premium": 55.0
+    }
+  },
+  {
+    "experiment_id": 3,
+    "config": {
+      "model_name": "xgboost",
+      "task_type": "Classification",
+      "handle_imbalance": true,
+      "log_transform_target": false
+    },
+    "metrics": {
+      "accuracy": 0.84,
+      "precision": 0.8447,
+      "recall": 0.84,
+      "f1_score": 0.842,
+      "roc_auc": 0.8876
+    },
+    "top_features": {
+      "login_frequency": 0.3726288378238678,
+      "support_tickets": 0.2332688421010971,
+      "subscription_Premium": 0.09171126037836075,
+      "monthly_spending": 0.08877990394830704,
+      "subscription_Standard": 0.08322607725858688,
+      "age": 0.08179782330989838,
+      "subscription_Basic": 0.04858716204762459
+    }
+  }
+]
