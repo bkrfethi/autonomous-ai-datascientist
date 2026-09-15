@@ -93,7 +93,7 @@ Séquence d'exécution obligatoire :
     # Boucle d'exécution d'outils (limite max 8 itérations)
     for step in range(8):
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=messages,
             tools=TOOLS_SCHEMA,
             tool_choice="auto",

@@ -4,24 +4,24 @@
     "config": {
       "model_name": "catboost",
       "task_type": "Classification",
-      "handle_imbalance": true,
+      "handle_imbalance": false,
       "log_transform_target": false
     },
     "metrics": {
-      "accuracy": 0.83,
-      "precision": 0.8475,
-      "recall": 0.83,
-      "f1_score": 0.8356,
-      "roc_auc": 0.9021
+      "accuracy": 0.845,
+      "precision": 0.844,
+      "recall": 0.845,
+      "f1_score": 0.8445,
+      "roc_auc": 0.9071
     },
     "top_features": {
-      "login_frequency": 33.579720350664836,
-      "support_tickets": 25.048545860427843,
-      "monthly_spending": 17.030562197008734,
-      "age": 13.665163783220942,
-      "subscription_Standard": 4.171916361859622,
-      "subscription_Premium": 3.490423688093654,
-      "subscription_Basic": 3.0136677587243783
+      "login_frequency": 33.96972943549537,
+      "support_tickets": 25.315966290115824,
+      "monthly_spending": 17.272621678577778,
+      "age": 13.352512496041495,
+      "subscription_Standard": 3.981496279593172,
+      "subscription_Premium": 3.6138998167804792,
+      "subscription_Basic": 2.4937740033958726
     }
   },
   {
@@ -54,24 +54,24 @@
     "config": {
       "model_name": "xgboost",
       "task_type": "Classification",
-      "handle_imbalance": true,
+      "handle_imbalance": false,
       "log_transform_target": false
     },
     "metrics": {
-      "accuracy": 0.84,
-      "precision": 0.8447,
-      "recall": 0.84,
-      "f1_score": 0.842,
-      "roc_auc": 0.8876
+      "accuracy": 0.845,
+      "precision": 0.8422,
+      "recall": 0.845,
+      "f1_score": 0.8434,
+      "roc_auc": 0.902
     },
     "top_features": {
-      "login_frequency": 0.3726288378238678,
-      "support_tickets": 0.2332688421010971,
-      "subscription_Premium": 0.09171126037836075,
-      "monthly_spending": 0.08877990394830704,
-      "subscription_Standard": 0.08322607725858688,
-      "age": 0.08179782330989838,
-      "subscription_Basic": 0.04858716204762459
+      "login_frequency": 0.32432806491851807,
+      "support_tickets": 0.24209259450435638,
+      "subscription_Premium": 0.11629307270050049,
+      "subscription_Standard": 0.10377554595470428,
+      "monthly_spending": 0.07902497798204422,
+      "age": 0.07551748305559158,
+      "subscription_Basic": 0.05896826460957527
     }
   }
 ]
