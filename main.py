@@ -1,7 +1,7 @@
 import os
 import json
 from fastapi import FastAPI, HTTPException, Query
-from agent import run_autonomous_agent
+from agent import run_senior_autonomous_agent
 from tools.eda_engine import analyze_dataset
 
 app = FastAPI(title="Autonomous AI Data Scientist API")
@@ -32,7 +32,7 @@ def ask_agent(
 ):
     """Lance l'analyse autonome, la modélisation et l'explicabilité SHAP."""
     try:
-        report = run_autonomous_agent(csv_path=file_path, target_col=target_col, query=query)
+        report =run_senior_autonomous_agent(file_path, target_col, query)
         
         # Récupération de l'historique des expériences
         experiments = []

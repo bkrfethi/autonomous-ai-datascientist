@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_auc_score, f1_score
-
 def compute_dataset_hash(df: pd.DataFrame) -> str:
     """Génère un hash SHA-256 unique pour garantir la traçabilité des données."""
     return hashlib.sha256(pd.util.hash_pandas_object(df, index=True).values).hexdigest()
@@ -19,9 +18,10 @@ class ReliabilityEngine:
         X = df.drop(columns=[self.target_col])
         y = df[self.target_col]
 
-        # 1. Détection des ID / Colonnes à trop forte cardinalité
+        # 1. Détection des ID / Colonnes à trop forte cardinalité (objets ou chaînes)
         for col in X.columns:
-            if X[col].nunique() == len(X) and X[col].dtype == 'object':
+            is_string_or_obj = pd.api.types.is_string_dtype(X[col]) or pd.api.types.is_object_dtype(X[col])
+            if X[col].nunique() == len(X) and is_string_or_obj:
                 issues.append(f"LEAKAGE_RISK: La colonne '{col}' est un identifiant unique.")
 
         # 2. Corrélation directe suspecte avec la cible (Data Leakage)
