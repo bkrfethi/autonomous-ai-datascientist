@@ -39,10 +39,10 @@ class AutonomousFeatureEngine:
         return df_feat
 
     def run_feature_selection_loop(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[Dict]]:
-        """Boucle expérimentale optimisée avec échantillonnage et validation 3-fold."""
-        # Échantillonnage temporaire pour accélérer la recherche
-        if len(df) > self.max_sample_size:
-            df_eval = df.sample(n=self.max_sample_size, random_state=42).copy()
+        """Boucle optimisée : teste uniquement un sous-ensemble restreint de candidates."""
+        # 1. Échantillonnage à 3000 lignes pour accélérer la validation
+        if len(df) > 3000:
+            df_eval = df.sample(n=3000, random_state=42).copy()
         else:
             df_eval = df.copy()
 
@@ -53,7 +53,9 @@ class AutonomousFeatureEngine:
         best_score = baseline_res["mean_cv_score"]
 
         candidates_df_eval = self.generate_candidates(df_eval)
-        new_cols = [c for c in candidates_df_eval.columns if c not in df_eval.columns]
+        
+        # 2. BRIDER LE NOMBRE DE CANDIDATES (Max 8 au lieu de 60+)
+        new_cols = [c for c in candidates_df_eval.columns if c not in df_eval.columns][:8]
 
         selected_eval = X_base_eval.copy()
         kept_features = []
@@ -63,6 +65,7 @@ class AutonomousFeatureEngine:
             "overfitting_gap": baseline_res["overfitting_gap"]
         }]
 
+        # 3. Boucle rapide restreinte aux 8 candidates
         for col in new_cols:
             col_data = candidates_df_eval[[col]]
             if col_data.select_dtypes(include=['object', 'category']).shape[1] > 0:
@@ -84,15 +87,8 @@ class AutonomousFeatureEngine:
                     "new_score": float(best_score),
                     "overfitting_gap": eval_res["overfitting_gap"]
                 })
-            else:
-                audit_log.append({
-                    "feature": col,
-                    "status": "REJECTED",
-                    "score_diff": float(gain),
-                    "is_overfitting": eval_res["is_overfitting"]
-                })
 
-        # Appliquer les variables retenues sur l'intégralité du dataset
+        # Application des features retenues au dataset complet
         full_candidates = self.generate_candidates(df)
         X_full = pd.get_dummies(df.drop(columns=[self.target_col]), drop_first=True)
         for f in kept_features:
