@@ -4,10 +4,11 @@ from typing import Tuple, List, Dict
 from tools.reliability_engine import ReliabilityEngine
 
 class AutonomousFeatureEngine:
-    def __init__(self, target_col: str, model_factory):
+    def __init__(self, target_col: str, model_factory, sample_size: int = None):
         self.target_col = target_col
         self.model_factory = model_factory
         self.reliability = ReliabilityEngine(target_col)
+        self.sample_size = sample_size  # ← NOUVEAU : limite le nombre de lignes
 
     def generate_candidates(self, df: pd.DataFrame) -> pd.DataFrame:
         """Génère des propositions de variables : ratios, logs, interactions."""
@@ -40,6 +41,12 @@ class AutonomousFeatureEngine:
 
     def run_feature_selection_loop(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[Dict]]:
         """Boucle expérimentale EDA -> Proposal -> Validation -> Keep/Reject."""
+        
+        # ✅ NOUVEAU : Sous-échantillonnage si demandé (accélère les tests)
+        if self.sample_size is not None and len(df) > self.sample_size:
+            df = df.sample(n=self.sample_size, random_state=42).reset_index(drop=True)
+            print(f"⚠️  Sous-échantillonnage : {self.sample_size} lignes (sur {len(df)})")
+        
         # Baseline
         X_base = pd.get_dummies(df.drop(columns=[self.target_col]), drop_first=True)
         y = df[self.target_col]
@@ -50,6 +57,8 @@ class AutonomousFeatureEngine:
         candidates_df = self.generate_candidates(df)
         new_cols = [c for c in candidates_df.columns if c not in df.columns]
 
+        print(f"🔬 {len(new_cols)} features candidates à tester...")
+        
         selected_df = X_base.copy()
         audit_log = [{
             "action": "baseline",
@@ -58,7 +67,7 @@ class AutonomousFeatureEngine:
         }]
 
         # Tester chaque feature candidate individuellement
-        for col in new_cols:
+        for idx, col in enumerate(new_cols, 1):
             col_data = candidates_df[[col]]
             if col_data.select_dtypes(include=['object', 'category']).shape[1] > 0:
                 col_data = pd.get_dummies(col_data, drop_first=True)
@@ -74,6 +83,7 @@ class AutonomousFeatureEngine:
             if gain > 0.005 and not eval_res["is_overfitting"]:
                 best_score = new_score
                 selected_df = X_test.copy()
+                status = "✅ KEPT"
                 audit_log.append({
                     "feature": col,
                     "status": "KEPT",
@@ -82,12 +92,22 @@ class AutonomousFeatureEngine:
                     "overfitting_gap": eval_res["overfitting_gap"]
                 })
             else:
+                status = "❌ REJECTED"
                 audit_log.append({
                     "feature": col,
                     "status": "REJECTED",
                     "score_diff": float(gain),
                     "is_overfitting": eval_res["is_overfitting"]
                 })
+            
+            # ✅ NOUVEAU : Affichage progression
+            print(f"  [{idx}/{len(new_cols)}] {col:40s} → {status} (gain: {gain:+.4f})")
 
         selected_df[self.target_col] = y
+        
+        # ✅ NOUVEAU : Résumé final
+        kept = sum(1 for log in audit_log if log.get("status") == "KEPT")
+        print(f"\n📊 RÉSULTAT : {kept}/{len(new_cols)} features retenues")
+        print(f"📈 Score final : {best_score:.4f} (baseline : {baseline_res['mean_cv_score']:.4f})")
+        
         return selected_df, audit_log
