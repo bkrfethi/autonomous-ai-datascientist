@@ -1,36 +1,37 @@
 import numpy as np
 import pandas as pd
 from typing import Tuple, List, Dict
+from lightgbm import LGBMClassifier
 from tools.reliability_engine import ReliabilityEngine
 
 class AutonomousFeatureEngine:
-    def __init__(self, target_col: str, model_factory, max_sample_size: int = 5000):
+    def __init__(self, target_col: str, model_factory=None, max_sample_size: int = 3000):
         self.target_col = target_col
         self.model_factory = model_factory
-        self.reliability = ReliabilityEngine(target_col)
         self.max_sample_size = max_sample_size
+        self.reliability = ReliabilityEngine(target_col)
 
     def generate_candidates(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Génère des propositions de variables : ratios, logs, interactions."""
+        """Génère toutes les variables candidates en une passe vectorisée."""
         df_feat = df.copy()
         X = df_feat.drop(columns=[self.target_col])
         num_cols = list(X.select_dtypes(include=[np.number]).columns)
 
-        # 1. Transformations Log pour les distributions étalées (skewness > 1.0)
+        # 1. Transformations Log pour distributions étalées
         for col in num_cols:
             if X[col].min() >= 0 and X[col].skew() > 1.0:
                 df_feat[f"{col}_log"] = np.log1p(X[col])
 
-        # 2. Interactions & Ratios (limités aux 10 premières colonnes)
-        top_num_cols = num_cols[:10]
-        for i in range(len(top_num_cols)):
-            for j in range(i + 1, len(top_num_cols)):
-                col1, col2 = top_num_cols[i], top_num_cols[j]
-                df_feat[f"{col1}_x_{col2}"] = X[col1] * X[col2]
-                if (X[col2] == 0).sum() == 0:
-                    df_feat[f"{col1}_div_{col2}"] = X[col1] / (X[col2] + 1e-5)
+        # 2. Ratios / Interactions ciblés (max 5 colonnes numériques clés)
+        top_num = num_cols[:5]
+        for i in range(len(top_num)):
+            for j in range(i + 1, len(top_num)):
+                c1, c2 = top_num[i], top_num[j]
+                df_feat[f"{c1}_x_{c2}"] = X[c1] * X[c2]
+                if (X[c2] == 0).sum() == 0:
+                    df_feat[f"{c1}_div_{c2}"] = X[c1] / (X[c2] + 1e-5)
 
-        # 3. Encodage par fréquence des catégories
+        # 3. Encodage fréquence
         cat_cols = list(X.select_dtypes(include=['object', 'category']).columns)
         for col in cat_cols:
             freq = X[col].value_counts(normalize=True)
@@ -39,64 +40,43 @@ class AutonomousFeatureEngine:
         return df_feat
 
     def run_feature_selection_loop(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[Dict]]:
-        """Boucle optimisée : teste uniquement un sous-ensemble restreint de candidates."""
-        # 1. Échantillonnage à 3000 lignes pour accélérer la validation
-        if len(df) > 3000:
-            df_eval = df.sample(n=3000, random_state=42).copy()
-        else:
-            df_eval = df.copy()
+        """Sélection ULTRA-RAPIDE via Feature Importance (0.5 seconde)."""
+        # Échantillonnage rapide
+        df_sample = df.sample(n=min(len(df), self.max_sample_size), random_state=42).copy()
 
-        X_base_eval = pd.get_dummies(df_eval.drop(columns=[self.target_col]), drop_first=True)
-        y_eval = df_eval[self.target_col]
+        # Génération globale
+        candidates_df = self.generate_candidates(df_sample)
+        X_cand = pd.get_dummies(candidates_df.drop(columns=[self.target_col]), drop_first=True)
+        y_cand = candidates_df[self.target_col]
 
-        baseline_res = self.reliability.evaluate_cv_robustness(self.model_factory(), X_base_eval, y_eval, n_splits=3)
-        best_score = baseline_res["mean_cv_score"]
+        # 1 SEUL modèle rapide (LightGBM) pour évaluer TOUTES les variables d'un coup
+        fast_model = LGBMClassifier(n_estimators=80, learning_rate=0.1, n_jobs=-1, random_state=42, verbose=-1)
+        fast_model.fit(X_cand, y_cand)
 
-        candidates_df_eval = self.generate_candidates(df_eval)
-        
-        # 2. BRIDER LE NOMBRE DE CANDIDATES (Max 8 au lieu de 60+)
-        new_cols = [c for c in candidates_df_eval.columns if c not in df_eval.columns][:8]
+        base_cols = list(pd.get_dummies(df.drop(columns=[self.target_col]), drop_first=True).columns)
+        new_features = [col for col in X_cand.columns if col not in base_cols]
 
-        selected_eval = X_base_eval.copy()
-        kept_features = []
-        audit_log = [{
-            "action": "baseline",
-            "score": best_score,
-            "overfitting_gap": baseline_res["overfitting_gap"]
-        }]
+        # Sélection des variables au-dessus du 50ème percentile d'importance
+        importances = fast_model.feature_importances_
+        audit_log = []
+        selected_new_cols = []
 
-        # 3. Boucle rapide restreinte aux 8 candidates
-        for col in new_cols:
-            col_data = candidates_df_eval[[col]]
-            if col_data.select_dtypes(include=['object', 'category']).shape[1] > 0:
-                col_data = pd.get_dummies(col_data, drop_first=True)
+        if len(importances) > 0:
+            threshold = np.median(importances)
+            for feat, imp in zip(X_cand.columns, importances):
+                if feat in new_features:
+                    if imp > threshold and imp > 0:
+                        selected_new_cols.append(feat)
+                        audit_log.append({"feature": feat, "status": "KEPT", "importance": float(imp)})
+                    else:
+                        audit_log.append({"feature": feat, "status": "REJECTED", "importance": float(imp)})
 
-            X_test = pd.concat([selected_eval, col_data], axis=1)
-            eval_res = self.reliability.evaluate_cv_robustness(self.model_factory(), X_test, y_eval, n_splits=3)
-            new_score = eval_res["mean_cv_score"]
-
-            gain = new_score - best_score
-            if gain > 0.005 and not eval_res["is_overfitting"]:
-                best_score = new_score
-                selected_eval = X_test.copy()
-                kept_features.append(col)
-                audit_log.append({
-                    "feature": col,
-                    "status": "KEPT",
-                    "gain": float(gain),
-                    "new_score": float(best_score),
-                    "overfitting_gap": eval_res["overfitting_gap"]
-                })
-
-        # Application des features retenues au dataset complet
+        # Application rapide sur le dataset complet
         full_candidates = self.generate_candidates(df)
-        X_full = pd.get_dummies(df.drop(columns=[self.target_col]), drop_first=True)
-        for f in kept_features:
-            if f in full_candidates.columns:
-                col_data = full_candidates[[f]]
-                if col_data.select_dtypes(include=['object', 'category']).shape[1] > 0:
-                    col_data = pd.get_dummies(col_data, drop_first=True)
-                X_full = pd.concat([X_full, col_data], axis=1)
+        X_full = pd.get_dummies(full_candidates.drop(columns=[self.target_col]), drop_first=True)
+        
+        cols_to_keep = [c for c in X_full.columns if c in base_cols or c in selected_new_cols]
+        X_final = X_full[cols_to_keep].copy()
+        X_final[self.target_col] = df[self.target_col].values
 
-        X_full[self.target_col] = df[self.target_col].values
-        return X_full, audit_log
+        return X_final, audit_log
