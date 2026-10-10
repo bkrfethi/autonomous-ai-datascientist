@@ -10,7 +10,6 @@ def analyze_dataset(csv_path: str, target_col: str = None) -> dict:
     n_rows, n_cols = df.shape
     memory_usage_mb = round(df.memory_usage(deep=True).sum() / (1024 * 1024), 2)
     
-    # 1. Classification précise des types de colonnes
     col_types = {
         "numeric": [],
         "categorical": [],
@@ -27,7 +26,6 @@ def analyze_dataset(csv_path: str, target_col: str = None) -> dict:
         unique_count = df[col].nunique()
         dtype = df[col].dtype
         
-        # Détection d'identifiants ou trop forte cardinalité
         if 'id' in col.lower() or unique_count == n_rows:
             col_types["id_or_high_cardinality"].append(col)
             warnings.append(f"La colonne '{col}' ressemble à un identifiant (unique à 100%). Elle sera exclue de l'entraînement.")
@@ -47,18 +45,15 @@ def analyze_dataset(csv_path: str, target_col: str = None) -> dict:
             else:
                 col_types["categorical"].append(col)
 
-    # 2. Analyse de la qualité des données
     missing_pct = (df.isnull().sum() / n_rows * 100).to_dict()
     missing_warnings = {k: round(v, 2) for k, v in missing_pct.items() if v > 0}
     if missing_warnings:
         warnings.append(f"Valeurs manquantes détectées : {missing_warnings}")
 
-    # Détection de colonnes constantes
     constant_cols = [col for col in df.columns if df[col].nunique() <= 1]
     if constant_cols:
         warnings.append(f"Colonnes constantes sans variance détectées : {constant_cols}")
 
-    # 3. Analyse du déséquilibre et détection de fuite de données (Data Leakage)
     target_info = {}
     if target_col and target_col in df.columns:
         y = df[target_col]
@@ -80,7 +75,6 @@ def analyze_dataset(csv_path: str, target_col: str = None) -> dict:
             if abs(target_skew) > 1.5:
                 warnings.append(f"Forte asymétrie (skewness = {round(target_skew, 2)}) sur la cible. Une transformation logarithmique est conseillée.")
 
-        # Détection de Data Leakage (Corrélation anormalement élevée avec la cible)
         numeric_df = df.select_dtypes(include=[np.number])
         if target_col in numeric_df.columns:
             correlations = numeric_df.corr()[target_col].abs()

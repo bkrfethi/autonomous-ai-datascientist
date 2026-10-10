@@ -10,7 +10,6 @@ login_frequency = np.random.randint(1, 30, size=n)
 support_tickets = np.random.randint(0, 10, size=n)
 subscription = np.random.choice(['Basic', 'Standard', 'Premium'], size=n)
 
-# Calcul d'un score de risque de churn logique
 churn_score = (
     0.3 * support_tickets 
     - 0.15 * login_frequency 
@@ -18,7 +17,6 @@ churn_score = (
     + np.random.normal(0, 1, size=n)
 )
 
-# Convertir le score en probabilité (Sigmoïde) puis en 0 ou 1
 prob = 1 / (1 + np.exp(-churn_score))
 churn = (prob > 0.4).astype(int)
 

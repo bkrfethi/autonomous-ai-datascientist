@@ -48,11 +48,9 @@ def generate_shap_analysis(csv_path: str, target_col: str) -> dict:
 
     model.fit(X_train, y_train)
 
-    # Calcul des valeurs SHAP
     explainer = shap.TreeExplainer(model)
     shap_values = explainer(X_test)
 
-    # Génération du graphique SHAP Summary
     plt.figure(figsize=(10, 6))
     shap.summary_plot(shap_values, X_test, feature_names=feature_names, show=False)
     plt.title("Interprétabilité SHAP - Impact des variables sur les prédictions", fontsize=12, pad=15)

@@ -28,18 +28,15 @@ def profile_endpoint(file_path: str = Query(...)):
 def ask_agent(
     file_path: str = Query(...),
     query: str = Query(""),
-    target_col: str = Query("")  # Valeur par défaut vide pour la détection automatique
+    target_col: str = Query("")
 ):
     """Lance l'analyse autonome, la modélisation et l'explicabilité SHAP."""
     try:
-        # 1. RÉINITIALISATION : Effacer la mémoire des anciennes expériences
         if os.path.exists("experiment_memory.json"):
             os.remove("experiment_memory.json")
 
-        # 2. Exécution de l'agent
         report = run_senior_autonomous_agent(file_path, target_col, query)
         
-        # 3. Récupération du nouvel historique des expériences
         experiments = []
         if os.path.exists("experiment_memory.json"):
             with open("experiment_memory.json", "r", encoding="utf-8") as f:

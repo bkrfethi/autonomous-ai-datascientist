@@ -17,7 +17,6 @@ def train_and_evaluate(csv_path: str, target_col: str) -> dict:
     X = df.drop(columns=[target_col] + ignore_cols)
     y = df[target_col]
 
-    # Détection automatique du type de problème (Classification vs Régression)
     is_classification = False
     if y.dtype == 'object' or y.dtype == 'bool' or y.nunique() <= 10:
         is_classification = True
@@ -25,7 +24,6 @@ def train_and_evaluate(csv_path: str, target_col: str) -> dict:
     num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
     cat_cols = X.select_dtypes(include=['object', 'category', 'string', 'bool']).columns.tolist()
 
-    # Preprocessing avec Imputation automatique (gestion des valeurs manquantes)
     num_pipeline = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler())
@@ -54,7 +52,6 @@ def train_and_evaluate(csv_path: str, target_col: str) -> dict:
     )
 
     if is_classification:
-        # Encoder la cible si elle est textuelle
         if y.dtype == 'object':
             y_train = y_train.astype('category').cat.codes
             y_test = y_test.astype('category').cat.codes
@@ -78,7 +75,6 @@ def train_and_evaluate(csv_path: str, target_col: str) -> dict:
             }
         }
     else:
-        # Régression (ex: Prix de maison, Ventes)
         baseline = Ridge()
         baseline.fit(X_train, y_train)
         y_pred_base = baseline.predict(X_test)

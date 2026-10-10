@@ -19,20 +19,17 @@ class ReliabilityEngine:
         X = df.drop(columns=[self.target_col])
         y = df[self.target_col]
 
-        # 1. Détection des ID / Colonnes à trop forte cardinalité
         for col in X.columns:
             is_string_or_obj = pd.api.types.is_string_dtype(X[col]) or pd.api.types.is_object_dtype(X[col])
             if X[col].nunique() == len(X) and is_string_or_obj:
                 issues.append(f"LEAKAGE_RISK: La colonne '{col}' est un identifiant unique.")
 
-        # 2. Corrélation directe suspecte avec la cible
         num_cols = X.select_dtypes(include=[np.number]).columns
         for col in num_cols:
             corr = abs(y.corr(X[col]))
             if corr >= self.threshold_leakage:
                 issues.append(f"CRITICAL_LEAKAGE: '{col}' a une corrélation de {corr:.2f} avec la cible.")
 
-        # 3. Ratio de déséquilibre
         class_counts = y.value_counts(normalize=True)
         imbalance_ratio = class_counts.min() / class_counts.max()
 

@@ -27,23 +27,19 @@ def run_experiment(
     """Exécute une expérience ML paramétrée et enregistre ses résultats."""
     df = pd.read_csv(csv_path)
 
-    # Exclure la cible et les identifiants
     ignore_cols = [c for c in df.columns if 'id' in c.lower() and c.lower() != target_col.lower()]
     X = df.drop(columns=[target_col] + ignore_cols)
     y = df[target_col]
 
-    # Détection du type de tâche
     is_classif = (y.dtype == 'object' or y.dtype == 'bool' or y.nunique() <= 10)
     task_type = "Classification" if is_classif else "Regression"
 
-    # Transformation logarithmique si demandée (Régression)
     if not is_classif and log_transform_target:
         y = np.log1p(y)
 
     num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
     cat_cols = X.select_dtypes(include=['object', 'category', 'string', 'bool']).columns.tolist()
 
-    # Preprocessing
     num_pipeline = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler())
@@ -62,7 +58,6 @@ def run_experiment(
 
     X_processed = preprocessor.fit_transform(X)
     
-    # Feature names post-encoding
     cat_encoder = preprocessor.named_transformers_['cat'].named_steps['onehot']
     cat_feature_names = list(cat_encoder.get_feature_names_out(cat_cols)) if cat_cols else []
     feature_names = num_cols + cat_feature_names
@@ -71,7 +66,6 @@ def run_experiment(
         X_processed, y, test_size=0.2, random_state=42
     )
 
-    # SÉLECTION DU MODÈLE
     m_name = model_name.lower()
     
     if is_classif:
@@ -79,7 +73,6 @@ def run_experiment(
             y_train = y_train.astype('category').cat.codes
             y_test = y_test.astype('category').cat.codes
 
-        # Calcul du poids de classe si déséquilibre activé
         scale_pos_weight = 1.0
         if handle_imbalance and len(np.bincount(y_train)) == 2:
             neg, pos = np.bincount(y_train)
@@ -91,13 +84,12 @@ def run_experiment(
             model = lgb.LGBMClassifier(random_state=42, verbose=-1, scale_pos_weight=scale_pos_weight)
         elif m_name == "catboost":
             model = cb.CatBoostClassifier(random_state=42, verbose=0, scale_pos_weight=scale_pos_weight)
-        else:  # XGBoost par défaut
+        else:
             model = XGBClassifier(eval_metric='logloss', random_state=42, scale_pos_weight=scale_pos_weight)
 
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
         
-        # Probabilités pour le calcul du ROC-AUC
         try:
             y_prob = model.predict_proba(X_test)[:, 1]
             roc_auc = round(float(roc_auc_score(y_test, y_prob)), 4)
@@ -112,20 +104,19 @@ def run_experiment(
             "roc_auc": roc_auc
         }
 
-    else:  # Régression
+    else:
         if m_name == "ridge":
             model = Ridge()
         elif m_name == "lightgbm":
             model = lgb.LGBMRegressor(random_state=42, verbose=-1)
         elif m_name == "catboost":
             model = cb.CatBoostRegressor(random_state=42, verbose=0)
-        else:  # XGBoost par défaut
+        else:
             model = XGBRegressor(random_state=42)
 
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
 
-        # Réinverser la transformation logarithmique si elle a été appliquée
         if log_transform_target:
             y_test_orig = np.expm1(y_test)
             y_pred_orig = np.expm1(y_pred)
@@ -139,7 +130,6 @@ def run_experiment(
             "rmse": round(float(root_mean_squared_error(y_test_orig, y_pred_orig)), 2)
         }
 
-    # Extraction des importances
     if hasattr(model, 'feature_importances_'):
         importances = model.feature_importances_
     elif hasattr(model, 'coef_'):
@@ -164,6 +154,5 @@ def run_experiment(
     }
 
 if __name__ == "__main__":
-    # Test d'une expérience
     res = run_experiment("uploads/churn_data.csv", target_col="churn", model_name="catboost", handle_imbalance=True)
     print(json.dumps(res, indent=2))

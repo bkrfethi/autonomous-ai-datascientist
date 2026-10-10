@@ -64,7 +64,6 @@ def generate_charts(csv_path: str, target_col: str) -> dict:
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
-    # 1. Graphique d'importance des variables
     importances = model.feature_importances_
     importance_df = pd.DataFrame({
         'Feature': feature_names,
@@ -80,7 +79,6 @@ def generate_charts(csv_path: str, target_col: str) -> dict:
     plt.close()
     chart_paths.append(fi_path)
 
-    # 2. Graphique de performance du modèle
     plt.figure(figsize=(6, 4))
     if is_classification:
         cm = confusion_matrix(y_test, y_pred)

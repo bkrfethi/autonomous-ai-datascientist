@@ -71,18 +71,15 @@ def detect_target_column(df: pd.DataFrame) -> str:
     """Détecte automatiquement la colonne cible la plus probable."""
     cols = list(df.columns)
     
-    # 1. Noms fréquents de cibles
     common_targets = ['target', 'churn', 'survived', 'label', 'class', 'exited', 'outcome', 'response', 'y', 'status', 'deposit']
     for col in cols:
         if col.lower().strip() in common_targets:
             return col
 
-    # 2. Dernière colonne si elle a peu de valeurs uniques (ex: classification)
     last_col = cols[-1]
     if df[last_col].nunique() < (len(df) * 0.5):
         return last_col
 
-    # 3. Recherche de la dernière colonne binaire
     for col in reversed(cols):
         if df[col].nunique() == 2:
             return col
@@ -96,7 +93,6 @@ def load_and_preprocess_dataset(csv_path: str, target_col: str = None):
 
     df = pd.read_csv(csv_path)
 
-    # Détection automatique si la cible n'est pas fournie ou est vide
     if not target_col or str(target_col).strip() in ["", "None", "auto"]:
         actual_target_col = detect_target_column(df)
     else:
@@ -106,7 +102,6 @@ def load_and_preprocess_dataset(csv_path: str, target_col: str = None):
         else:
             actual_target_col = detect_target_column(df)
 
-    # Nettoyage des identifiants uniques (ex: IDs)
     cols_to_drop = []
     for col in df.columns:
         if col != actual_target_col and (df[col].dtype == 'object' or isinstance(df[col].iloc[0], str)):
@@ -115,21 +110,18 @@ def load_and_preprocess_dataset(csv_path: str, target_col: str = None):
     if cols_to_drop:
         df = df.drop(columns=cols_to_drop)
 
-    # Conversion de la cible en Binaire (0/1) si textuelle
     if df[actual_target_col].dtype == 'object' or isinstance(df[actual_target_col].iloc[0], str):
         val_map = {'yes': 1, 'no': 0, 'true': 1, 'false': 0, '1': 1, '0': 0}
         df[actual_target_col] = df[actual_target_col].astype(str).str.strip().str.lower().map(val_map)
         if df[actual_target_col].isna().any():
             df[actual_target_col] = pd.factorize(df[actual_target_col])[0]
 
-    # Conversion des colonnes numériques masquées
     for col in df.columns:
         if col != actual_target_col and df[col].dtype == 'object':
             converted = pd.to_numeric(df[col].astype(str).str.strip(), errors='coerce')
             if converted.notna().sum() > 0.5 * len(df):
                 df[col] = converted.fillna(converted.median())
 
-    # Assainissement des noms de colonnes
     clean_cols = [re.sub(r'[^\w]', '_', col) for col in df.columns]
     df.columns = clean_cols
     actual_target_col = re.sub(r'[^\w]', '_', actual_target_col)
