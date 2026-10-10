@@ -26,6 +26,7 @@ def profile_endpoint(file_path: str = Query(...)):
 
 @app.post("/ask")
 def ask_agent(
+    
     file_path: str = Query(...),
     query: str = Query(...),
     target_col: str = Query("churn")
