@@ -2,9 +2,9 @@ import os
 import requests
 import streamlit as st
 
-st.set_page_config(page_title="Autonomous AI Data Scientist", layout="wide", page_icon="🤖")
+st.set_page_config(page_title="Autonomous AI Data Scientist", layout="wide")
 
-st.title("🤖 Autonomous AI Data Scientist")
+st.title("Autonomous AI Data Scientist")
 st.caption("Plateforme autonome d'analyse de données, d'expérimentation ML et d'explicabilité SHAP.")
 
 # 1. Ingestion des données
@@ -28,8 +28,8 @@ if uploaded_file is not None:
         placeholder="Ex : Quels sont les facteurs principaux influençant le risque et les leviers d'action ?"
     )
 
-    if st.button("🚀 Lancer l'Analyse Autonome", type="primary"):
-        with st.spinner("🤖 L'agent autonome inspecte le fichier, détecte la cible et exécute les expérimentations..."):
+    if st.button("Lancer l'Analyse Autonome", type="primary"):
+        with st.spinner("L'agent autonome inspecte le fichier, détecte la cible et exécute les expérimentations..."):
             try:
                 # Appel API sans target_col (détection 100 % automatique)
                 params = {
@@ -50,13 +50,13 @@ if uploaded_file is not None:
                         report_text = str(data)
                     
                     st.markdown("---")
-                    st.header("📋 Rapport d'Analyse Autonome")
+                    st.header("Rapport d'Analyse Autonome")
                     st.markdown(report_text)
 
                     # Affichage structuré des expérimentations si présentes
                     if isinstance(data, dict) and "experiments" in data and data["experiments"]:
                         st.markdown("---")
-                        st.subheader("🔬 Historique des Expérimentations Autonomes")
+                        st.subheader("Historique des Expérimentations Autonomes")
                         st.json(data["experiments"])
 
                 else:

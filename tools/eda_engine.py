@@ -30,7 +30,7 @@ def analyze_dataset(csv_path: str, target_col: str = None) -> dict:
         # Détection d'identifiants ou trop forte cardinalité
         if 'id' in col.lower() or unique_count == n_rows:
             col_types["id_or_high_cardinality"].append(col)
-            warnings.append(f"⚠️ La colonne '{col}' ressemble à un identifiant (unique à 100%). Elle sera exclue de l'entraînement.")
+            warnings.append(f"La colonne '{col}' ressemble à un identifiant (unique à 100%). Elle sera exclue de l'entraînement.")
             continue
             
         if pd.api.types.is_numeric_dtype(dtype):
@@ -43,7 +43,7 @@ def analyze_dataset(csv_path: str, target_col: str = None) -> dict:
         else:
             if unique_count > 50 and unique_count / n_rows > 0.3:
                 col_types["id_or_high_cardinality"].append(col)
-                warnings.append(f"⚠️ La colonne textuelle '{col}' a une très forte cardinalité ({unique_count} valeurs uniques).")
+                warnings.append(f"La colonne textuelle '{col}' a une très forte cardinalité ({unique_count} valeurs uniques).")
             else:
                 col_types["categorical"].append(col)
 
@@ -51,12 +51,12 @@ def analyze_dataset(csv_path: str, target_col: str = None) -> dict:
     missing_pct = (df.isnull().sum() / n_rows * 100).to_dict()
     missing_warnings = {k: round(v, 2) for k, v in missing_pct.items() if v > 0}
     if missing_warnings:
-        warnings.append(f"⚠️ Valeurs manquantes détectées : {missing_warnings}")
+        warnings.append(f"Valeurs manquantes détectées : {missing_warnings}")
 
     # Détection de colonnes constantes
     constant_cols = [col for col in df.columns if df[col].nunique() <= 1]
     if constant_cols:
-        warnings.append(f"⚠️ Colonnes constantes sans variance détectées : {constant_cols}")
+        warnings.append(f"Colonnes constantes sans variance détectées : {constant_cols}")
 
     # 3. Analyse du déséquilibre et détection de fuite de données (Data Leakage)
     target_info = {}
@@ -71,14 +71,14 @@ def analyze_dataset(csv_path: str, target_col: str = None) -> dict:
             target_info["distribution"] = {str(k): round(v, 4) for k, v in dist.items()}
             min_class_pct = min(dist.values())
             if min_class_pct < 0.15:
-                warnings.append(f"🚨 Forte imbalancement de la variable cible ({round(min_class_pct*100, 1)}% pour la classe minoritaire). Poids de classes ou rééchantillonnage requis.")
+                warnings.append(f"Forte imbalancement de la variable cible ({round(min_class_pct*100, 1)}% pour la classe minoritaire). Poids de classes ou rééchantillonnage requis.")
         else:
             target_info["mean"] = round(float(y.mean()), 2)
             target_info["std"] = round(float(y.std()), 2)
             target_skew = skew(y.dropna())
             target_info["skewness"] = round(float(target_skew), 2)
             if abs(target_skew) > 1.5:
-                warnings.append(f"⚠️ Forte asymétrie (skewness = {round(target_skew, 2)}) sur la cible. Une transformation logarithmique est conseillée.")
+                warnings.append(f"Forte asymétrie (skewness = {round(target_skew, 2)}) sur la cible. Une transformation logarithmique est conseillée.")
 
         # Détection de Data Leakage (Corrélation anormalement élevée avec la cible)
         numeric_df = df.select_dtypes(include=[np.number])
@@ -86,7 +86,7 @@ def analyze_dataset(csv_path: str, target_col: str = None) -> dict:
             correlations = numeric_df.corr()[target_col].abs()
             for col, corr in correlations.items():
                 if col != target_col and corr > 0.90:
-                    warnings.append(f"🚨 Risque de Target Leakage : La colonne '{col}' a une corrélation de {round(corr, 2)} avec la cible.")
+                    warnings.append(f"Risque de Target Leakage : La colonne '{col}' a une corrélation de {round(corr, 2)} avec la cible.")
 
     return {
         "dataset_summary": {

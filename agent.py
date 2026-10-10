@@ -157,6 +157,7 @@ CONSIGNE STRICTE :
 - Ne pose JAMAIS de question à l'utilisateur.
 - Lance DIRECTEMENT l'outil `audit_dataset_health` au premier tour.
 - Si la colonne cible n'est pas fournie, passe `target_col=""` : le système la détectera automatiquement.
+- Tout code Python inclus dans le rapport doit être entouré strictement par les balises Markdown ```python et ```.
 
 Étapes à enchaîner sans interruption :
 1. `audit_dataset_health`
